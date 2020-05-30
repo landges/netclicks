@@ -23,10 +23,11 @@ const leftMenu=document.querySelector('.left-menu'),
       modalContent=document.querySelector('.modal__content'),
       pagination=document.querySelector('.pagination');
 
+console.log(pagination);
+
 const loading = document.createElement('div');
 loading.className='loading';
-
-const DBService=class{  
+class DBService{  
     getData=async(url)=>{//асинхронная функция
         const res= await fetch(url);
         if (res.ok){
@@ -58,7 +59,7 @@ const DBService=class{
 
 }
 
-
+const dbService=new DBService()
 // console.log(new DBService().getSearchResult('Няня'));
 const renderCard=(response,target)=>{
     tvShowsList.textContent='';
@@ -102,19 +103,49 @@ const renderCard=(response,target)=>{
     });
     pagination.textContent='';
     if (!target && response.total_pages>1){
-        for(let i=1;i<=response.total_pages;i++){
-            pagination.innerHTML+=`<li><a href="#" class="pages">${i}</a></li>`
+        pagination.classList.remove('hide');
+        if (response.page===1){
+
+            pagination.innerHTML+=`
+            <li><a class="prev disabled" href="#prev">Назад</a></li>
+            <li><a class="current" href="#" class="pages" data-page="${response.page}">${response.page}</a></li>
+            <li><span>&hellip;</span></li>
+            <li><a href="#" class="pages" data-page="${response.page}">${response.total_pages}</a></li>
+            <li><a class="next pages" href="#next" data-page="${response.page+1}">Вперёд</a></li>`;
+        }else if(response.page>1 && response.page< response.total_pages) {
+            pagination.innerHTML+=`
+            <li><a class="prev pages" href="#prev" data-page="${response.page-1}">Назад</a></li>
+            <li><a class="current pages" href="#" data-page="${response.page}">${response.page}</a></li>
+            <li><span>&hellip;</span></li>
+            <li><a href="#" class="pages" data-page="${response.page}">${response.total_pages}</a></li>
+            <li><a class="next pages" href="#next" data-page="${response.page+1}">Вперёд</a></li>`;
+        }
+        else{
+            pagination.innerHTML+=`
+            <li><a class="prev pages" href="#prev" data-page="${response.page-1}">Назад</a></li>
+            <li><a class="current pages" href="#" data-page="1">1</a></li>
+            <li><span>&hellip;</span></li>
+            <li><a href="#" class="pages" data-page="${response.page}">${response.total_pages}</a></li>
+            <li><a class="next disabled" href="#next"">Вперёд</a></li>`;
         }
     }
 };
 
+pagination.addEventListener('click',(event)=>{
+    event.preventDefault();
+    const target=event.target;
+    if (target.classList.contains('pages')){
+        tvShows.append(loading);        
+        dbService.getNextPage(target.dataset.page).then(renderCard);
+    }
+});
 //search
 searchForm.addEventListener('submit', event=>{
     event.preventDefault();
     const value= searchFormInput.value.trim();
     if (value){
         tvShows.append(loading);
-        new DBService().getSearchResult(value).then(renderCard);
+        dbService.getSearchResult(value).then(renderCard);
     }
     searchFormInput.value='';
 });
@@ -150,16 +181,16 @@ leftMenu.addEventListener('click',(event)=>{
         hamburger.classList.add('open');
     }
     if(target.closest('#top-rated')){
-        new DBService().getTopRated().then((response)=>renderCard(response,target));
+        dbService.getTopRated().then((response)=>renderCard(response,target));
     }
     if(target.closest('#popular')){
-        new DBService().getTopPopular().then((response)=>renderCard(response,target));
+        dbService.getTopPopular().then((response)=>renderCard(response,target));
     }
     if(target.closest('#today')){
-        new DBService().getToday().then((response)=>renderCard(response,target));
+        dbService.getToday().then((response)=>renderCard(response,target));
     }
     if(target.closest('#week')){
-        new DBService().getWeek().then((response)=>renderCard(response,target));
+        dbService.getWeek().then((response)=>renderCard(response,target));
     }
     if (target.closest('#search')){
         tvShowsList.textContent='';
@@ -187,7 +218,7 @@ tvShowsList.addEventListener('click',event=>{
     const card=target.closest('.tv-card');
     if (card){
         preloader.style.display='block';
-        new DBService().getTvShow(card.id)
+        dbService.getTvShow(card.id)
             .then(response =>{
                 if(response.poster_path){
                     tvCardImg.src=IMG_URL+response.poster_path;
@@ -223,13 +254,5 @@ modal.addEventListener('click',event=>{
         event.target.classList.contains('modal')){
         document.body.style.overflow='';
         modal.classList.add('hide');
-    }
-});
-pagination.addEventListener('click',(event)=>{
-    event.preventDefault();
-    const target=event.target;
-    if (target.classList.contains('pages')){
-        tvShows.append(loading);
-        new DBService().getNextPage(target.textContent).then(renderCard);
     }
 });

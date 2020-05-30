@@ -1204,3 +1204,15 @@ div:after {
     padding:0 5px;
     margin:0 5px;
 }
+.submit_button{
+    transform: none;
+    width:35px;
+    height:35px;
+    border:none;
+    position:absolute;
+    right:234px;
+    top:100px;
+    border-radius: 50%;
+    background-color: #ffc107;
+
+}
